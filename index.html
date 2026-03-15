@@ -37,6 +37,11 @@
       75% { transform: translateY(-15px) rotate(2deg); }
     }
 
+    @keyframes sway {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+
     .shake { animation: shake 0.3s infinite; }
     .flash-overlay { animation: pulse-red 0.5s infinite; }
     .skull-enter { animation: skull-appear 0.5s ease-out forwards; }
@@ -44,6 +49,15 @@
 
     .meter-bar {
       transition: height 0.1s ease-out, background-color 0.3s;
+    }
+
+    .alcohol-fill {
+      transition: height 0.5s ease-out, background-color 0.5s;
+    }
+
+    .bottle-sway {
+      animation: sway 2s ease-in-out infinite;
+      transform-origin: bottom center;
     }
   </style>
 </head>
@@ -56,17 +70,12 @@
   <div id="deathIcon" class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none hidden">
     <div id="skullWrapper" class="text-center">
       <svg class="w-48 h-48 md:w-64 md:h-64 drop-shadow-[0_0_40px_rgba(255,0,0,0.8)]" viewBox="0 0 100 100" fill="none">
-        <!-- Cranio -->
         <path d="M50 8C28 8 14 25 14 45C14 58 20 68 30 73V85C30 87 32 89 34 89H42V82H46V89H54V82H58V89H66C68 89 70 87 70 85V73C80 68 86 58 86 45C86 25 72 8 50 8Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
-        <!-- Occhio sinistro -->
         <ellipse cx="36" cy="42" rx="9" ry="11" fill="#0f172a"/>
         <ellipse cx="36" cy="40" rx="4" ry="5" fill="#ef4444" class="animate-pulse"/>
-        <!-- Occhio destro -->
         <ellipse cx="64" cy="42" rx="9" ry="11" fill="#0f172a"/>
         <ellipse cx="64" cy="40" rx="4" ry="5" fill="#ef4444" class="animate-pulse"/>
-        <!-- Naso -->
         <path d="M46 55L50 62L54 55Z" fill="#0f172a"/>
-        <!-- Denti -->
         <rect x="34" y="72" width="6" height="10" rx="1" fill="#0f172a" stroke="#94a3b8" stroke-width="1"/>
         <rect x="42" y="72" width="6" height="10" rx="1" fill="#0f172a" stroke="#94a3b8" stroke-width="1"/>
         <rect x="50" y="72" width="6" height="10" rx="1" fill="#0f172a" stroke="#94a3b8" stroke-width="1"/>
@@ -77,21 +86,21 @@
   </div>
 
   <!-- Contenuto principale -->
-  <div id="mainContent" class="flex flex-col items-center gap-8 z-10">
+  <div id="mainContent" class="flex flex-col items-center gap-6 z-10 py-8">
     <h1 class="text-3xl md:text-5xl font-bold tracking-tight">
       <span class="text-gray-400">Decibel</span> Meter
     </h1>
 
     <!-- Valore dB -->
     <div class="relative">
-      <div id="dbValue" class="text-8xl md:text-9xl font-black tabular-nums text-white transition-colors duration-300">
+      <div id="dbValue" class="text-7xl md:text-9xl font-black tabular-nums text-white transition-colors duration-300">
         0
       </div>
-      <span class="absolute -right-8 top-4 text-2xl text-gray-500 font-medium">dB</span>
+      <span class="absolute -right-8 top-2 text-2xl text-gray-500 font-medium">dB</span>
     </div>
 
     <!-- Barra visuale -->
-    <div class="flex items-end gap-1 h-40 w-72 md:w-96 bg-gray-900 rounded-xl p-3 border border-gray-800">
+    <div class="flex items-end gap-1 h-32 w-72 md:w-96 bg-gray-900 rounded-xl p-3 border border-gray-800">
       <div id="barsContainer" class="flex items-end gap-[2px] w-full h-full"></div>
     </div>
 
@@ -105,6 +114,70 @@
       class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 rounded-full text-lg font-semibold transition-all duration-200 shadow-lg shadow-emerald-900/50">
       Start
     </button>
+
+    <!-- Sezione Grado Alcolico -->
+    <div id="alcoholSection" class="w-72 md:w-96 mt-4 bg-gray-900 rounded-xl p-4 border border-gray-800 hidden">
+      <h2 class="text-center text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Stima Grado Alcolico</h2>
+
+      <div class="flex items-end gap-4">
+        <!-- Bottiglia SVG -->
+        <div class="flex flex-col items-center">
+          <div id="bottleWrapper" class="relative">
+            <svg width="50" height="120" viewBox="0 0 50 120" fill="none">
+              <!-- Collo bottiglia -->
+              <rect x="18" y="0" width="14" height="25" rx="3" fill="#374151" stroke="#4b5563" stroke-width="1"/>
+              <!-- Tappo -->
+              <rect x="16" y="0" width="18" height="6" rx="2" fill="#6b7280"/>
+              <!-- Corpo bottiglia -->
+              <path d="M18 25 L10 40 L10 110 Q10 118 18 118 L32 118 Q40 118 40 110 L40 40 L32 25Z" fill="#1f2937" stroke="#4b5563" stroke-width="1"/>
+              <!-- Liquido (clippath) -->
+              <defs>
+                <clipPath id="bottleClip">
+                  <path d="M18 25 L10 40 L10 110 Q10 118 18 118 L32 118 Q40 118 40 110 L40 40 L32 25Z"/>
+                </clipPath>
+              </defs>
+              <rect id="liquidFill" x="8" y="118" width="34" height="0" fill="#a855f7" clip-path="url(#bottleClip)" class="alcohol-fill"/>
+              <!-- Etichetta -->
+              <rect x="14" y="65" width="22" height="18" rx="2" fill="#374151" stroke="#6b7280" stroke-width="0.5"/>
+              <text x="25" y="77" text-anchor="middle" fill="#d1d5db" font-size="7" font-weight="bold">%</text>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Grafico e info -->
+        <div class="flex-1 flex flex-col gap-2">
+          <!-- Valore percentuale -->
+          <div class="text-center">
+            <span id="alcoholValue" class="text-4xl font-black text-purple-400">0.0</span>
+            <span class="text-lg text-gray-500">%</span>
+          </div>
+
+          <!-- Barra orizzontale -->
+          <div class="w-full h-4 bg-gray-800 rounded-full overflow-hidden">
+            <div id="alcoholBar" class="h-full rounded-full transition-all duration-500 bg-green-500" style="width: 0%"></div>
+          </div>
+
+          <!-- Label stato -->
+          <p id="alcoholLabel" class="text-sm text-center text-gray-500 font-medium">Sobrio</p>
+
+          <!-- Scala -->
+          <div class="flex justify-between text-[10px] text-gray-600 px-1">
+            <span>0%</span>
+            <span>0.5%</span>
+            <span>1%</span>
+            <span>2%+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grafico storico -->
+      <div class="mt-4">
+        <p class="text-[10px] text-gray-600 mb-1 uppercase tracking-wider">Andamento</p>
+        <canvas id="alcoholChart" width="320" height="80" class="w-full rounded bg-gray-800/50"></canvas>
+      </div>
+
+      <p class="text-[9px] text-gray-700 text-center mt-2 italic">Solo per divertimento, non ha valore scientifico!</p>
+    </div>
   </div>
 
   <script>
@@ -117,12 +190,27 @@
     const skullWrapper = document.getElementById('skullWrapper');
     const dangerOverlay = document.getElementById('dangerOverlay');
     const mainContent = document.getElementById('mainContent');
+    const alcoholSection = document.getElementById('alcoholSection');
+    const alcoholValue = document.getElementById('alcoholValue');
+    const alcoholBar = document.getElementById('alcoholBar');
+    const alcoholLabel = document.getElementById('alcoholLabel');
+    const alcoholChart = document.getElementById('alcoholChart');
+    const liquidFill = document.getElementById('liquidFill');
+    const bottleWrapper = document.getElementById('bottleWrapper');
+    const chartCtx = alcoholChart.getContext('2d');
 
     let audioCtx, analyser, microphone, stream;
     let running = false;
     let animFrameId;
     let bars = [];
     let deathVisible = false;
+
+    // Dati per stima alcolica
+    let dbHistory = [];
+    let alcoholHistory = [];
+    const MAX_HISTORY = 60; // ultimi 60 campioni per il grafico
+    let smoothedAlcohol = 0;
+    let frameCount = 0;
 
     // Crea le barre
     for (let i = 0; i < NUM_BARS; i++) {
@@ -149,6 +237,216 @@
       if (ratio < 0.6) return '#eab308';
       if (ratio < 0.8) return '#f97316';
       return '#ef4444';
+    }
+
+    function getAlcoholLevel(pct) {
+      if (pct < 0.02) return { text: 'Sobrio', color: 'text-green-400', barColor: 'bg-green-500', liquid: '#22c55e' };
+      if (pct < 0.05) return { text: 'Rilassato', color: 'text-emerald-400', barColor: 'bg-emerald-500', liquid: '#34d399' };
+      if (pct < 0.1) return { text: 'Allegro', color: 'text-yellow-400', barColor: 'bg-yellow-500', liquid: '#eab308' };
+      if (pct < 0.3) return { text: 'Brillo', color: 'text-orange-400', barColor: 'bg-orange-500', liquid: '#f97316' };
+      if (pct < 0.8) return { text: 'Ubriaco!', color: 'text-red-400', barColor: 'bg-red-500', liquid: '#ef4444' };
+      if (pct < 1.5) return { text: 'Distrutto!', color: 'text-red-500', barColor: 'bg-red-600', liquid: '#dc2626' };
+      return { text: 'Coma etilico!', color: 'text-red-600', barColor: 'bg-red-700', liquid: '#991b1b' };
+    }
+
+    function estimateAlcohol(dataArray, db) {
+      // Analisi vocale "fun" per stimare il grado alcolico:
+      // 1. Varianza del volume (voce instabile = più ubriaco)
+      // 2. Zero-crossing rate (biascicamento)
+      // 3. Volume medio (si urla di più da ubriachi)
+      // 4. Picchi improvvisi (perdita di controllo)
+
+      // Varianza del segnale
+      let mean = 0;
+      for (let i = 0; i < dataArray.length; i++) mean += Math.abs(dataArray[i]);
+      mean /= dataArray.length;
+
+      let variance = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const diff = Math.abs(dataArray[i]) - mean;
+        variance += diff * diff;
+      }
+      variance /= dataArray.length;
+
+      // Zero-crossing rate
+      let zeroCrossings = 0;
+      for (let i = 1; i < dataArray.length; i++) {
+        if ((dataArray[i] >= 0 && dataArray[i - 1] < 0) || (dataArray[i] < 0 && dataArray[i - 1] >= 0)) {
+          zeroCrossings++;
+        }
+      }
+      const zcr = zeroCrossings / dataArray.length;
+
+      // Aggiorna storico dB per calcolare instabilità
+      dbHistory.push(db);
+      if (dbHistory.length > 30) dbHistory.shift();
+
+      // Instabilità del volume (deviazione std dei dB recenti)
+      let dbMean = 0;
+      for (const d of dbHistory) dbMean += d;
+      dbMean /= dbHistory.length;
+      let dbVariance = 0;
+      for (const d of dbHistory) dbVariance += (d - dbMean) * (d - dbMean);
+      const dbStd = Math.sqrt(dbVariance / dbHistory.length);
+
+      // Formula "divertente" per il grado alcolico
+      let score = 0;
+
+      // Più instabile il volume → più ubriaco
+      score += Math.min(dbStd / 15, 1) * 0.8;
+
+      // Varianza alta nel segnale → voce tremolante
+      score += Math.min(variance * 500, 1) * 0.4;
+
+      // ZCR anomalo (troppo alto o troppo basso) → biascicamento
+      const zcrNorm = Math.abs(zcr - 0.15) / 0.15;
+      score += Math.min(zcrNorm, 1) * 0.3;
+
+      // Volume alto → si urla
+      if (db > 70) score += Math.min((db - 70) / 60, 1) * 0.5;
+
+      // Mappa score (0-2) su percentuale alcolica (0-2.5%)
+      const rawAlcohol = Math.min(score, 2) * 1.25;
+
+      // Smooth
+      smoothedAlcohol = smoothedAlcohol * 0.85 + rawAlcohol * 0.15;
+
+      return smoothedAlcohol;
+    }
+
+    function drawAlcoholChart() {
+      const w = alcoholChart.width;
+      const h = alcoholChart.height;
+      const dpr = window.devicePixelRatio || 1;
+
+      // HiDPI
+      if (alcoholChart.getAttribute('data-scaled') !== 'true') {
+        alcoholChart.width = w * dpr;
+        alcoholChart.height = h * dpr;
+        alcoholChart.style.width = w + 'px';
+        alcoholChart.style.height = h + 'px';
+        chartCtx.scale(dpr, dpr);
+        alcoholChart.setAttribute('data-scaled', 'true');
+      }
+
+      chartCtx.clearRect(0, 0, w, h);
+
+      if (alcoholHistory.length < 2) return;
+
+      // Griglia
+      chartCtx.strokeStyle = '#374151';
+      chartCtx.lineWidth = 0.5;
+      for (let i = 0; i <= 4; i++) {
+        const y = (h / 4) * i;
+        chartCtx.beginPath();
+        chartCtx.moveTo(0, y);
+        chartCtx.lineTo(w, y);
+        chartCtx.stroke();
+      }
+
+      // Labels griglia
+      chartCtx.fillStyle = '#4b5563';
+      chartCtx.font = '8px sans-serif';
+      chartCtx.fillText('2%', 2, 10);
+      chartCtx.fillText('1%', 2, h / 2 + 3);
+      chartCtx.fillText('0%', 2, h - 2);
+
+      // Linea soglia legale (0.5%)
+      const legalY = h - (0.5 / 2.5) * h;
+      chartCtx.strokeStyle = '#ef444466';
+      chartCtx.lineWidth = 1;
+      chartCtx.setLineDash([4, 4]);
+      chartCtx.beginPath();
+      chartCtx.moveTo(0, legalY);
+      chartCtx.lineTo(w, legalY);
+      chartCtx.stroke();
+      chartCtx.setLineDash([]);
+      chartCtx.fillStyle = '#ef444488';
+      chartCtx.font = '7px sans-serif';
+      chartCtx.fillText('limite legale', w - 55, legalY - 3);
+
+      // Gradiente area
+      const gradient = chartCtx.createLinearGradient(0, 0, 0, h);
+      gradient.addColorStop(0, '#a855f740');
+      gradient.addColorStop(1, '#a855f705');
+
+      // Area sotto la curva
+      chartCtx.beginPath();
+      const step = w / (MAX_HISTORY - 1);
+      chartCtx.moveTo(0, h);
+      for (let i = 0; i < alcoholHistory.length; i++) {
+        const x = i * step;
+        const y = h - (Math.min(alcoholHistory[i], 2.5) / 2.5) * h;
+        if (i === 0) chartCtx.lineTo(x, y);
+        else chartCtx.lineTo(x, y);
+      }
+      chartCtx.lineTo((alcoholHistory.length - 1) * step, h);
+      chartCtx.closePath();
+      chartCtx.fillStyle = gradient;
+      chartCtx.fill();
+
+      // Linea
+      chartCtx.beginPath();
+      for (let i = 0; i < alcoholHistory.length; i++) {
+        const x = i * step;
+        const y = h - (Math.min(alcoholHistory[i], 2.5) / 2.5) * h;
+        if (i === 0) chartCtx.moveTo(x, y);
+        else chartCtx.lineTo(x, y);
+      }
+      chartCtx.strokeStyle = '#a855f7';
+      chartCtx.lineWidth = 2;
+      chartCtx.lineJoin = 'round';
+      chartCtx.stroke();
+
+      // Punto corrente
+      if (alcoholHistory.length > 0) {
+        const lastX = (alcoholHistory.length - 1) * step;
+        const lastY = h - (Math.min(alcoholHistory[alcoholHistory.length - 1], 2.5) / 2.5) * h;
+        chartCtx.beginPath();
+        chartCtx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+        chartCtx.fillStyle = '#c084fc';
+        chartCtx.fill();
+        chartCtx.strokeStyle = '#e9d5ff';
+        chartCtx.lineWidth = 1.5;
+        chartCtx.stroke();
+      }
+    }
+
+    function updateAlcoholUI(pct) {
+      const level = getAlcoholLevel(pct);
+
+      alcoholValue.textContent = pct.toFixed(1);
+      alcoholValue.className = `text-4xl font-black ${level.color}`;
+
+      // Barra
+      const barPct = Math.min(pct / 2.5 * 100, 100);
+      alcoholBar.style.width = barPct + '%';
+      alcoholBar.className = `h-full rounded-full transition-all duration-500 ${level.barColor}`;
+
+      // Label
+      alcoholLabel.textContent = level.text;
+      alcoholLabel.className = `text-sm text-center font-medium ${level.color}`;
+
+      // Bottiglia - riempi il liquido
+      const maxLiquidHeight = 93; // altezza massima del liquido nella bottiglia
+      const liquidHeight = (Math.min(pct, 2.5) / 2.5) * maxLiquidHeight;
+      liquidFill.setAttribute('height', liquidHeight);
+      liquidFill.setAttribute('y', 118 - liquidHeight);
+      liquidFill.setAttribute('fill', level.liquid);
+
+      // Oscillazione bottiglia se ubriaco
+      if (pct >= 0.3) {
+        bottleWrapper.classList.add('bottle-sway');
+      } else {
+        bottleWrapper.classList.remove('bottle-sway');
+      }
+
+      // Aggiorna storico grafico (ogni ~10 frame)
+      if (frameCount % 10 === 0) {
+        alcoholHistory.push(pct);
+        if (alcoholHistory.length > MAX_HISTORY) alcoholHistory.shift();
+        drawAlcoholChart();
+      }
     }
 
     function showDeath() {
@@ -185,12 +483,9 @@
       }
       const rms = Math.sqrt(sum / dataArray.length);
 
-      // Converti in dB (approssimazione, calibrato per microfono web)
-      // Usiamo un range da -100 dB a 0 dB e mappiamo su 0-140 dB SPL
       let db = 0;
       if (rms > 0) {
         const dbFS = 20 * Math.log10(rms);
-        // Mappa da dBFS (-100..0) a dB SPL approssimativo (30..130+)
         db = Math.max(0, Math.min(140, dbFS + 130));
       }
       db = Math.round(db);
@@ -200,11 +495,11 @@
 
       // Colore del valore
       if (db >= 120) {
-        dbValue.className = 'text-8xl md:text-9xl font-black tabular-nums text-red-500 transition-colors duration-300';
+        dbValue.className = 'text-7xl md:text-9xl font-black tabular-nums text-red-500 transition-colors duration-300';
       } else if (db >= 85) {
-        dbValue.className = 'text-8xl md:text-9xl font-black tabular-nums text-orange-400 transition-colors duration-300';
+        dbValue.className = 'text-7xl md:text-9xl font-black tabular-nums text-orange-400 transition-colors duration-300';
       } else {
-        dbValue.className = 'text-8xl md:text-9xl font-black tabular-nums text-white transition-colors duration-300';
+        dbValue.className = 'text-7xl md:text-9xl font-black tabular-nums text-white transition-colors duration-300';
       }
 
       // Aggiorna label
@@ -234,6 +529,11 @@
         hideDeath();
       }
 
+      // Stima grado alcolico
+      frameCount++;
+      const alcoholPct = estimateAlcohol(dataArray, db);
+      updateAlcoholUI(alcoholPct);
+
       animFrameId = requestAnimationFrame(processAudio);
     }
 
@@ -248,7 +548,7 @@
         levelLabel.textContent = 'Premi Start per iniziare';
         levelLabel.className = 'text-lg text-gray-500 font-medium transition-colors duration-300';
         dbValue.textContent = '0';
-        dbValue.className = 'text-8xl md:text-9xl font-black tabular-nums text-white transition-colors duration-300';
+        dbValue.className = 'text-7xl md:text-9xl font-black tabular-nums text-white transition-colors duration-300';
         bars.forEach(b => { b.style.height = '2px'; b.style.backgroundColor = '#1f2937'; });
         hideDeath();
         return;
@@ -266,6 +566,14 @@
         running = true;
         startBtn.textContent = 'Stop';
         startBtn.className = 'px-8 py-3 bg-red-600 hover:bg-red-500 active:scale-95 rounded-full text-lg font-semibold transition-all duration-200 shadow-lg shadow-red-900/50';
+
+        // Mostra sezione alcolica e resetta
+        alcoholSection.classList.remove('hidden');
+        dbHistory = [];
+        alcoholHistory = [];
+        smoothedAlcohol = 0;
+        frameCount = 0;
+
         processAudio();
       } catch (err) {
         levelLabel.textContent = 'Errore: permesso microfono negato';
