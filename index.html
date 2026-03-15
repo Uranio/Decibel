@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decibel Meter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      10% { transform: translate(-10px, -5px) rotate(-5deg); }
+      20% { transform: translate(10px, 5px) rotate(5deg); }
+      30% { transform: translate(-10px, 5px) rotate(-3deg); }
+      40% { transform: translate(10px, -5px) rotate(3deg); }
+      50% { transform: translate(-5px, 10px) rotate(-5deg); }
+      60% { transform: translate(5px, -10px) rotate(5deg); }
+      70% { transform: translate(-10px, 5px) rotate(-3deg); }
+      80% { transform: translate(10px, 5px) rotate(3deg); }
+      90% { transform: translate(-5px, -10px) rotate(-5deg); }
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes skull-appear {
+      0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+      50% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    @keyframes float-skull {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      25% { transform: translateY(-10px) rotate(3deg); }
+      50% { transform: translateY(-5px) rotate(-2deg); }
+      75% { transform: translateY(-15px) rotate(2deg); }
+    }
+
+    .shake { animation: shake 0.3s infinite; }
+    .flash-overlay { animation: pulse-red 0.5s infinite; }
+    .skull-enter { animation: skull-appear 0.5s ease-out forwards; }
+    .skull-float { animation: float-skull 1s ease-in-out infinite; }
+
+    .meter-bar {
+      transition: height 0.1s ease-out, background-color 0.3s;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex flex-col items-center justify-center overflow-hidden relative">
+
+  <!-- Flash rosso di pericolo -->
+  <div id="dangerOverlay" class="fixed inset-0 bg-red-600 opacity-0 pointer-events-none z-40 transition-opacity duration-300"></div>
+
+  <!-- Icona di morte -->
+  <div id="deathIcon" class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none hidden">
+    <div id="skullWrapper" class="text-center">
+      <svg class="w-48 h-48 md:w-64 md:h-64 drop-shadow-[0_0_40px_rgba(255,0,0,0.8)]" viewBox="0 0 100 100" fill="none">
+        <!-- Cranio -->
+        <path d="M50 8C28 8 14 25 14 45C14 58 20 68 30 73V85C30 87 32 89 34 89H42V82H46V89H54V82H58V89H66C68 89 70 87 70 85V73C80 68 86 58 86 45C86 25 72 8 50 8Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+        <!-- Occhio sinistro -->
+        <ellipse cx="36" cy="42" rx="9" ry="11" fill="#0f172a"/>
+        <ellipse cx="36" cy="40" rx="4" ry="5" fill="#ef4444" class="animate-pulse"/>
+        <!-- Occhio destro -->
+        <ellipse cx="64" cy="42" rx="9" ry="11" fill="#0f172a"/>
+        <ellipse cx="64" cy="40" rx="4" ry="5" fill="#ef4444" class="animate-pulse"/>
+        <!-- Naso -->
+        <path d="M46 55L50 62L54 55Z" fill="#0f172a"/>
+        <!-- Denti -->
+        <rect x="34" y="72" width="6" height="10" rx="1" fill="#0f172a" stroke="#94a3b8" stroke-width="1"/>
+        <rect x="42" y="72" width="6" height="10" rx="1" fill="#0f172a" stroke="#94a3b8" stroke-width="1"/>
+        <rect x="50" y="72" width="6" height="10" rx="1" fill="#0f172a" stroke="#94a3b8" stroke-width="1"/>
+        <rect x="58" y="72" width="6" height="10" rx="1" fill="#0f172a" stroke="#94a3b8" stroke-width="1"/>
+      </svg>
+      <p class="text-red-500 text-2xl md:text-4xl font-black mt-4 tracking-widest animate-pulse">PERICOLO!</p>
+    </div>
+  </div>
+
+  <!-- Contenuto principale -->
+  <div id="mainContent" class="flex flex-col items-center gap-8 z-10">
+    <h1 class="text-3xl md:text-5xl font-bold tracking-tight">
+      <span class="text-gray-400">Decibel</span> Meter
+    </h1>
+
+    <!-- Valore dB -->
+    <div class="relative">
+      <div id="dbValue" class="text-8xl md:text-9xl font-black tabular-nums text-white transition-colors duration-300">
+        0
+      </div>
+      <span class="absolute -right-8 top-4 text-2xl text-gray-500 font-medium">dB</span>
+    </div>
+
+    <!-- Barra visuale -->
+    <div class="flex items-end gap-1 h-40 w-72 md:w-96 bg-gray-900 rounded-xl p-3 border border-gray-800">
+      <div id="barsContainer" class="flex items-end gap-[2px] w-full h-full"></div>
+    </div>
+
+    <!-- Livello testuale -->
+    <p id="levelLabel" class="text-lg text-gray-500 font-medium transition-colors duration-300">
+      Premi Start per iniziare
+    </p>
+
+    <!-- Bottone -->
+    <button id="startBtn" onclick="toggleMeter()"
+      class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 rounded-full text-lg font-semibold transition-all duration-200 shadow-lg shadow-emerald-900/50">
+      Start
+    </button>
+  </div>
+
+  <script>
+    const NUM_BARS = 40;
+    const barsContainer = document.getElementById('barsContainer');
+    const dbValue = document.getElementById('dbValue');
+    const levelLabel = document.getElementById('levelLabel');
+    const startBtn = document.getElementById('startBtn');
+    const deathIcon = document.getElementById('deathIcon');
+    const skullWrapper = document.getElementById('skullWrapper');
+    const dangerOverlay = document.getElementById('dangerOverlay');
+    const mainContent = document.getElementById('mainContent');
+
+    let audioCtx, analyser, microphone, stream;
+    let running = false;
+    let animFrameId;
+    let bars = [];
+    let deathVisible = false;
+
+    // Crea le barre
+    for (let i = 0; i < NUM_BARS; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'meter-bar w-full rounded-sm';
+      bar.style.height = '2px';
+      bar.style.backgroundColor = '#22c55e';
+      barsContainer.appendChild(bar);
+      bars.push(bar);
+    }
+
+    function getLevel(db) {
+      if (db < 30) return { text: 'Silenzio', color: 'text-gray-500' };
+      if (db < 50) return { text: 'Tranquillo', color: 'text-green-400' };
+      if (db < 70) return { text: 'Normale', color: 'text-emerald-400' };
+      if (db < 85) return { text: 'Rumoroso', color: 'text-yellow-400' };
+      if (db < 100) return { text: 'Molto forte', color: 'text-orange-400' };
+      if (db < 120) return { text: 'Pericoloso!', color: 'text-red-400' };
+      return { text: 'LETALE!', color: 'text-red-600' };
+    }
+
+    function getBarColor(ratio) {
+      if (ratio < 0.4) return '#22c55e';
+      if (ratio < 0.6) return '#eab308';
+      if (ratio < 0.8) return '#f97316';
+      return '#ef4444';
+    }
+
+    function showDeath() {
+      if (deathVisible) return;
+      deathVisible = true;
+      deathIcon.classList.remove('hidden');
+      skullWrapper.className = 'text-center skull-enter';
+      setTimeout(() => {
+        skullWrapper.className = 'text-center skull-float';
+      }, 500);
+      dangerOverlay.className = 'fixed inset-0 bg-red-600 pointer-events-none z-40 flash-overlay';
+      mainContent.classList.add('shake');
+    }
+
+    function hideDeath() {
+      if (!deathVisible) return;
+      deathVisible = false;
+      deathIcon.classList.add('hidden');
+      skullWrapper.className = 'text-center';
+      dangerOverlay.className = 'fixed inset-0 bg-red-600 opacity-0 pointer-events-none z-40 transition-opacity duration-300';
+      mainContent.classList.remove('shake');
+    }
+
+    function processAudio() {
+      if (!running) return;
+
+      const dataArray = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(dataArray);
+
+      // Calcola RMS
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i] * dataArray[i];
+      }
+      const rms = Math.sqrt(sum / dataArray.length);
+
+      // Converti in dB (approssimazione, calibrato per microfono web)
+      // Usiamo un range da -100 dB a 0 dB e mappiamo su 0-140 dB SPL
+      let db = 0;
+      if (rms > 0) {
+        const dbFS = 20 * Math.log10(rms);
+        // Mappa da dBFS (-100..0) a dB SPL approssimativo (30..130+)
+        db = Math.max(0, Math.min(140, dbFS + 130));
+      }
+      db = Math.round(db);
+
+      // Aggiorna valore
+      dbValue.textContent = db;
+
+      // Colore del valore
+      if (db >= 120) {
+        dbValue.className = 'text-8xl md:text-9xl font-black tabular-nums text-red-500 transition-colors duration-300';
+      } else if (db >= 85) {
+        dbValue.className = 'text-8xl md:text-9xl font-black tabular-nums text-orange-400 transition-colors duration-300';
+      } else {
+        dbValue.className = 'text-8xl md:text-9xl font-black tabular-nums text-white transition-colors duration-300';
+      }
+
+      // Aggiorna label
+      const level = getLevel(db);
+      levelLabel.textContent = level.text;
+      levelLabel.className = `text-lg font-medium transition-colors duration-300 ${level.color}`;
+
+      // Aggiorna barre
+      const ratio = db / 140;
+      const activeBars = Math.floor(ratio * NUM_BARS);
+      for (let i = 0; i < NUM_BARS; i++) {
+        if (i < activeBars) {
+          const barRatio = i / NUM_BARS;
+          const height = 4 + (barRatio * 100);
+          bars[i].style.height = height + '%';
+          bars[i].style.backgroundColor = getBarColor(barRatio);
+        } else {
+          bars[i].style.height = '2px';
+          bars[i].style.backgroundColor = '#1f2937';
+        }
+      }
+
+      // Icona di morte a 120+
+      if (db >= 120) {
+        showDeath();
+      } else {
+        hideDeath();
+      }
+
+      animFrameId = requestAnimationFrame(processAudio);
+    }
+
+    async function toggleMeter() {
+      if (running) {
+        running = false;
+        cancelAnimationFrame(animFrameId);
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        if (audioCtx) audioCtx.close();
+        startBtn.textContent = 'Start';
+        startBtn.className = 'px-8 py-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 rounded-full text-lg font-semibold transition-all duration-200 shadow-lg shadow-emerald-900/50';
+        levelLabel.textContent = 'Premi Start per iniziare';
+        levelLabel.className = 'text-lg text-gray-500 font-medium transition-colors duration-300';
+        dbValue.textContent = '0';
+        dbValue.className = 'text-8xl md:text-9xl font-black tabular-nums text-white transition-colors duration-300';
+        bars.forEach(b => { b.style.height = '2px'; b.style.backgroundColor = '#1f2937'; });
+        hideDeath();
+        return;
+      }
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioCtx = new AudioContext();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = 0.8;
+        microphone = audioCtx.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+
+        running = true;
+        startBtn.textContent = 'Stop';
+        startBtn.className = 'px-8 py-3 bg-red-600 hover:bg-red-500 active:scale-95 rounded-full text-lg font-semibold transition-all duration-200 shadow-lg shadow-red-900/50';
+        processAudio();
+      } catch (err) {
+        levelLabel.textContent = 'Errore: permesso microfono negato';
+        levelLabel.className = 'text-lg text-red-400 font-medium';
+      }
+    }
+  </script>
+</body>
+</html>
